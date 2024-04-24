@@ -45,6 +45,7 @@ Cypress.Commands.add(
     username,
     password,
     client_id,
+    client_secret,
     redirect_uri,
     path_prefix = 'auth',
     kc_idp_hint,
@@ -64,22 +65,29 @@ Cypress.Commands.add(
         .replace(/=/g, '');
       pkce['code_challenge'] = encodedHash;
     }
+    
+    qs = {
+      client_id,
+      redirect_uri,
+      kc_idp_hint,
+      scope: 'openid',
+      state: createUUID(),
+      nonce: createUUID(),
+      response_type: 'code',
+      response_mode: 'fragment',
+      ...pkce,
+    }
+
+    if (client_secret) {
+      qs.client_secret = client_secret;      
+    }
+
     return cy
       .request({
         url: `${root}${
           path_prefix ? `/${path_prefix}` : ''
         }/realms/${realm}/protocol/openid-connect/auth`,
-        qs: {
-          client_id,
-          redirect_uri,
-          kc_idp_hint,
-          scope: 'openid',
-          state: createUUID(),
-          nonce: createUUID(),
-          response_type: 'code',
-          response_mode: 'fragment',
-          ...pkce,
-        },
+        qs: qs 
       })
       .then((response) => {
         const html = document.createElement('html');
